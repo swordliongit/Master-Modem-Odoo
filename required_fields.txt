@@ -1,0 +1,15 @@
+x_uptime
+x_wireless_status
+x_channel
+x_mac
+x_device_info
+x_ip
+x_subnet
+x_dhcp
+x_enable_wireless
+x_enable_ssid1
+x_enable_ssid2
+x_enable_ssid3
+x_enable_ssid4
+x_manual_time
+x_new_password

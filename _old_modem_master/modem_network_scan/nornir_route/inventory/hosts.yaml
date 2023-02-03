@@ -1,0 +1,16 @@
+---
+device1:
+    hostname: 192.168.5.50
+    groups:
+        - device_discovered
+
+device2:
+    hostname: 192.168.5.1
+    groups:
+        - device_discovered
+
+device3:
+    hostname: 192.168.5.2
+    groups:
+        - device_discovered
+
