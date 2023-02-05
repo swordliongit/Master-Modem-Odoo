@@ -10,10 +10,11 @@
 
 
 import json
-import tkinter
+# import tkinter
+import customtkinter
+# from Master_Modem_Odoo import MmoGui
 
-
-def host_finder(target_ip: str, output) -> list[dict[str, str]]:
+def host_finder(target_ip: str, MmoGui) -> list[dict[str, str]]:
     """
     This function sends packages to each host in the network and fetches their ip and mac addresses
 
@@ -24,10 +25,10 @@ def host_finder(target_ip: str, output) -> list[dict[str, str]]:
 
     # XXX
     # print("\n" + "#"*15 + "\nSearching the network...\n" + "#"*15 + "\n")
-    output.config(state='normal')
-    output.insert(tkinter.END, "\n" + "#"*15 +
+    MmoGui.gui_console.configure(state='normal')
+    MmoGui.gui_console.insert(customtkinter.END, "\n" + "#"*15 +
                   "\nAg taraniyor...\n" + "#"*15 + "\n")
-    output.config(state='disabled')
+    MmoGui.gui_console.configure(state='disabled')
     # XXX
     # target_ip = "192.168.5.0/24"
     # IP Address for the destination
@@ -46,15 +47,15 @@ def host_finder(target_ip: str, output) -> list[dict[str, str]]:
         clients.append({'ip': received.psrc, 'mac': received.hwsrc})
     # XXX
     # print("Found hosts!")
-    output.config(state='normal')
-    output.insert(tkinter.END, "Aygitlar bulundu!\n")
-    output.config(state='disabled')
+    MmoGui.gui_console.configure(state='normal')
+    MmoGui.gui_console.insert(customtkinter.END, "Aygitlar bulundu!\n")
+    MmoGui.gui_console.configure(state='disabled')
     # XXX
 
     return clients
 
 
-def host_writer(fhfile: str, clients: list, output):
+def host_writer(fhfile: str, clients: list, MmoGui):
     """
     This function writes found list of dictionaries from the network scan result, into a json file
 
@@ -66,10 +67,10 @@ def host_writer(fhfile: str, clients: list, output):
     # XXX
     # print("Available devices in the network:")
     # print("IP" + " "*20+"MAC")
-    output.config(state='normal')
-    output.insert(tkinter.END, "Agdaki mevcut aygitlar:\n")
-    output.insert(tkinter.END, "IP" + " "*20+"MAC\n")
-    output.config(state='disabled')
+    MmoGui.gui_console.configure(state='normal')
+    MmoGui.gui_console.insert(customtkinter.END, "Agdaki mevcut aygitlar:\n")
+    MmoGui.gui_console.insert(customtkinter.END, "IP" + " "*20+"MAC\n")
+    MmoGui.gui_console.configure(state='disabled')
     # XXX
     with open(fhfile, "w") as file:
         json.dump(clients, file, indent=5)
@@ -78,15 +79,15 @@ def host_writer(fhfile: str, clients: list, output):
         # file.write(f"{client['ip']:16}    {client['mac']}\n")
         # XXX
         # print("{:16}      {}\n".format(client['ip'], client['mac']))
-        output.config(state='normal')
-        output.insert(tkinter.END, "{:16}      {}\n".format(
+        MmoGui.gui_console.configure(state='normal')
+        MmoGui.gui_console.insert(customtkinter.END, "{:16}      {}\n".format(
             client['ip'], client['mac']))
-        output.config(state='disabled')
+        MmoGui.gui_console.configure(state='disabled')
         # XXX
 
-    output.config(state='normal')
-    output.insert(tkinter.END, "Ag taramasi bitti.\n")
-    output.config(state='disabled')
+    MmoGui.gui_console.configure(state='normal')
+    MmoGui.gui_console.insert(customtkinter.END, "Ag taramasi bitti.\n")
+    MmoGui.gui_console.configure(state='disabled')
 
 
 def host_analyzer(fhfile: str, mhfile: str, mac_filter: str) -> dict:

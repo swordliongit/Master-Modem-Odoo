@@ -13,8 +13,9 @@ from queue import Queue
 from WaitGroup import WaitGroup
 # import PySimpleGUI as sg # left this gui method due to its incapability in multithreaded environment
 
-
-import tkinter  # capable of multithreaded work
+# from Master_Modem_Odoo import MmoGui
+# import tkinter  # capable of multithreaded work
+import customtkinter # improved tkinter, better for visuals
 
 
 # global because network scan writes into this and modem read reads from this separately.
@@ -23,11 +24,11 @@ needed_hosts = {}
 modify_queue = Queue()
 
 
-def network_scan(output, target_ip, fhfile="./hosts/found_hosts.json", mhfile="./hosts/modem_hosts.json"):
+def network_scan(MmoGui, target_ip, fhfile="./hosts/found_hosts.json", mhfile="./hosts/modem_hosts.json"):
     """Controls scapy_route network scanning functions.
 
     Args:
-        output (_type_): tkinter.Text console to pass into scapy_route functions for printing into GUI console.
+        MmoGui (_type_): MmoGui object to access the gui console to pass into scapy_route functions for printing.
         target_ip (str): ip interval to scan that's passed from the button function.
         fhfile (str, optional): found_hosts file that contains all the devices in the network. Defaults to "./hosts/found_hosts.json".
         mhfile (str, optional): modem_hosts file that contains all the devices that has a specific mac address. Defaults to "./hosts/modem_hosts.json".
@@ -37,12 +38,12 @@ def network_scan(output, target_ip, fhfile="./hosts/found_hosts.json", mhfile=".
     # information retrieval - pre operation phase
     import os
 
-    if os.stat("Python/modem_master_odoo/support/info.txt").st_size != 0:
-        with open("Python/modem_master_odoo/support/info.txt") as file:
+    if os.stat("Master-Modem-Odoo/support/info.txt").st_size != 0:
+        with open("Master-Modem-Odoo/support/info.txt") as file:
             # target_ip = file.readline().split('=')[1].strip('\n')   # ip range to scan
             mac_filter = file.readline().split('=')[1].strip('\n')  # mac filter to fetch
     else:
-        with open("Python/modem_master_odoo/support/info.txt", 'w') as file:
+        with open("Master-Modem-Odoo/support/info.txt", 'w') as file:
             # Python/modem_master_odoo/support/info.txt
             # file.writelines("target=192.168.5.0/24")
             file.writeline("mac_filter=1c:18:4a")
@@ -51,9 +52,8 @@ def network_scan(output, target_ip, fhfile="./hosts/found_hosts.json", mhfile=".
 
     create_directory("hosts/")  # create our directory for our host files
     target_ip = target_ip + "/24"
-    hosts: list[dict[str, str]] = host_finder(
-        target_ip, output)  # network scan
-    host_writer(fhfile, hosts, output)  # write found hosts into fhfile
+    hosts: list[dict[str, str]] = host_finder(target_ip, MmoGui)  # network scan
+    host_writer(fhfile, hosts, MmoGui)  # write found hosts into fhfile
     # filter found hosts based on 1c:18:4a mac and return a list of them
     needed_hosts = host_analyzer(fhfile, mhfile, mac_filter)
     if not needed_hosts:
@@ -61,10 +61,10 @@ def network_scan(output, target_ip, fhfile="./hosts/found_hosts.json", mhfile=".
         return
     # return needed_hosts
     # print("---------------------------")
-    output.config(state='normal')
-    output.insert(tkinter.END, "---------------------------\n")
-    output.insert(tkinter.END, "---------------------------\n")
-    output.config(state='disabled')
+    MmoGui.gui_console.configure(state='normal')
+    MmoGui.gui_console.insert(customtkinter.END, "---------------------------\n")
+    MmoGui.gui_console.insert(customtkinter.END, "---------------------------\n")
+    MmoGui.gui_console.configure(state='disabled')
 
 def confirmation():
     """This function is not used. It was to prompt warning message before attempting to modify modems.
@@ -81,7 +81,7 @@ def confirmation():
             exit()
 
 
-def modem_read_and_odoo_post(output, x_hotel_name, network_scan_caller_button, modem_read_and_odoo_post_caller_button, modem_configure_caller_button):
+def modem_read_and_odoo_post(MmoGui, x_hotel_name):
     """Function route:
     1 - Retrieve ip addresses of the devices that we need.
     2 - Read all of the modem interfaces multithreaded by calling the operation_controller sub routine for each ip address.
@@ -94,6 +94,8 @@ def modem_read_and_odoo_post(output, x_hotel_name, network_scan_caller_button, m
         modem_configure_caller_button: button that's passed from tkinter GUI that we need to enable/disable for our specific operations.
     """
     global needed_hosts
+    
+    MmoGui.progressbar.start()
 
     ip_list = []
     mac_list = []
@@ -105,10 +107,10 @@ def modem_read_and_odoo_post(output, x_hotel_name, network_scan_caller_button, m
     """
     READ OPERATION START
     """
-    output.config(state='normal')
-    output.insert(
-        tkinter.END, "Modem analizi basladi. Bu islem zaman alabilir, lutfen bekleyin...\n")
-    output.config(state='disabled')
+    MmoGui.gui_console.configure(state='normal')
+    MmoGui.gui_console.insert(
+        customtkinter.END, "Modem analizi basladi. Bu islem zaman alabilir, lutfen bekleyin...\n")
+    MmoGui.gui_console.configure(state='disabled')
 
     mode = "read"
     # threads = []
@@ -160,9 +162,9 @@ def modem_read_and_odoo_post(output, x_hotel_name, network_scan_caller_button, m
 
     send_datato_odoo(modem_read_result_list)
 
-    output.config(state='normal')
-    output.insert(tkinter.END, "Veriler Odoo'ya gonderildi!..\n")
-    output.config(state='disabled')
+    MmoGui.gui_console.configure(state='normal')
+    MmoGui.gui_console.insert(customtkinter.END, "Veriler Odoo'ya gonderildi!..\n")
+    MmoGui.gui_console.configure(state='disabled')
     """
     ODOO POST END
     """
@@ -170,28 +172,30 @@ def modem_read_and_odoo_post(output, x_hotel_name, network_scan_caller_button, m
 
     # import tkinterthread
     # tkinterthread.call_nosync(confirmation)
-    network_scan_caller_button.config(state="normal")
-    modem_configure_caller_button.config(state="normal")
-    modem_read_and_odoo_post_caller_button.config(state="normal")
+    MmoGui.network_scan_caller_button.configure(state="normal")
+    MmoGui.modem_configure_caller_button.configure(state="normal")
+    MmoGui.modem_read_and_odoo_post_caller_button.configure(state="normal")
 
-    output.config(state='normal')
-    output.insert(tkinter.END, 
+    MmoGui.gui_console.configure(state='normal')
+    MmoGui.gui_console.insert(customtkinter.END, 
                   "Degisiklik yaptiginiz ayarlari uygulamak icin\n'Web Ayarlarini Uygula Butonuna' basin."+
                   "Tekrar ag taramasi yapmak icin\n'Ag Taramasi' butonuna basin.\n")
-    output.config(state='disabled')
+    MmoGui.gui_console.configure(state='disabled')
     
     print("---------------------------")
-    output.config(state='normal')
-    output.insert(tkinter.END, "---------------------------\n")
-    output.insert(tkinter.END, "---------------------------\n")
-    output.config(state='disabled')
+    MmoGui.gui_console.configure(state='normal')
+    MmoGui.gui_console.insert(customtkinter.END, "---------------------------\n")
+    MmoGui.gui_console.insert(customtkinter.END, "---------------------------\n")
+    MmoGui.gui_console.configure(state='disabled')
+    
+    MmoGui.progressbar.stop()
     # while not event_scan_or_fetch.is_set():
     #     pass
 
     # event_scan_or_fetch.clear()
 
 
-def modem_configure(output, network_scan_caller_button, modem_read_and_odoo_post_caller_button, modem_configure_caller_button):
+def modem_configure(MmoGui):
     """Function route:
     1 - Fetch all of the modems from Odoo.
     2 - Map each fetched modem's ip to the ips of needed devices so we know which ip to enter if the ip was modified from Odoo's interface.
@@ -205,13 +209,15 @@ def modem_configure(output, network_scan_caller_button, modem_read_and_odoo_post
         modem_configure_caller_button: button that's passed from tkinter GUI that we need to enable/disable for our specific operations.
 
     """
-
+    
     """
     FETCH START
     """
-    output.config(state='normal')
-    output.insert(tkinter.END, "Odoo'dan veri toplaniyor...\n")
-    output.config(state='disabled')
+    MmoGui.gui_console.configure(state='normal')
+    MmoGui.gui_console.insert(customtkinter.END, "Odoo'dan veri toplaniyor...\n")
+    MmoGui.gui_console.configure(state='disabled')
+    
+    MmoGui.progressbar.start()
 
     odoo_login()
     fetched_modem_list: list = fetch_datafrom_odoo()
@@ -237,9 +243,9 @@ def modem_configure(output, network_scan_caller_button, modem_read_and_odoo_post
     mode = "modify"
     global modify_queue
 
-    output.config(state='normal')
-    output.insert(tkinter.END, "Modem konfigurasyonu basladi. Bu islem zaman alabilir, lutfen bekleyin...\n")
-    output.config(state='disabled')
+    MmoGui.gui_console.configure(state='normal')
+    MmoGui.gui_console.insert(customtkinter.END, "Modem konfigurasyonu basladi. Bu islem zaman alabilir, lutfen bekleyin...\n")
+    MmoGui.gui_console.configure(state='disabled')
     
     backup_read_modems_list = []
     while not modify_queue.empty():
@@ -252,10 +258,9 @@ def modem_configure(output, network_scan_caller_button, modem_read_and_odoo_post
             raise Exception("No changes were made!")
     except Exception as e:
         print(e.args[0])
-        output.config(state='normal')
-        output.insert(tkinter.END, "Modemlerde degisiklik yapilmadi veya Odoo'ya veri gönderilmedi.\n"
-                      "Lütfen Odoo'ya verileri gonderin ve daha sonra modemlerde degisiklik yapin.\n")
-        output.config(state='disabled')
+        MmoGui.gui_console.configure(state='normal')
+        MmoGui.gui_console.insert(customtkinter.END, "Modemlerde degisiklik yapilmadi veya Odoo'ya veri gönderilmedi.\nLütfen Odoo'ya verileri gonderin ve daha sonra modemlerde degisiklik yapin.\n")
+        MmoGui.gui_console.configure(state='disabled')
     else:
         read_modems_list = []
         while not modify_queue.empty():
@@ -285,20 +290,20 @@ def modem_configure(output, network_scan_caller_button, modem_read_and_odoo_post
         for t in threads:  # wait for all threads to finish
             wait_group_w.wait()
             
-        output.config(state='normal')
-        output.insert(tkinter.END, "Modem konfigurasyonu bitti..\n")
-        output.insert(
-            tkinter.END, "Verileri Odoo'ya göndermek için 'Sonuclari Odoo'ya Gonder' butonuna basin.\n")
-        output.config(state='disabled')
+        MmoGui.gui_console.configure(state='normal')
+        MmoGui.gui_console.insert(customtkinter.END, "Modem konfigurasyonu bitti..\nVerileri Odoo'ya göndermek için 'Sonuclari Odoo'ya Gonder' butonuna basin.\n")
+        MmoGui.gui_console.configure(state='disabled')
+
     finally:
-        modem_read_and_odoo_post_caller_button.config(state="normal")
-        network_scan_caller_button.config(state="normal")
-        modem_configure_caller_button.config(state="normal")
+        MmoGui.modem_read_and_odoo_post_caller_button.configure(state="normal")
+        MmoGui.network_scan_caller_button.configure(state="normal")
+        MmoGui.modem_configure_caller_button.configure(state="normal")
         print("---------------------------")
-        output.config(state='normal')
-        output.insert(tkinter.END, "---------------------------\n")
-        output.insert(tkinter.END, "---------------------------\n")
-        output.config(state='disabled')
+        MmoGui.gui_console.configure(state='normal')
+        MmoGui.gui_console.insert(customtkinter.END, "---------------------------\n---------------------------\n")
+        MmoGui.gui_console.configure(state='disabled')
+        
+        MmoGui.progressbar.stop()
     """
     MODIFY OPERATION END
     """

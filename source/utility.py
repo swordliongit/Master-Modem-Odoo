@@ -19,6 +19,5 @@ def create_directory(filename):
 
 def u_p_setter(u, p):
     global username, password
-
     username = u
     password = p
