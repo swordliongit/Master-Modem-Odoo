@@ -115,16 +115,11 @@ class MmoGui(customtkinter.CTk):
         self.network_scan_caller_button.configure(state="disabled")
         self.modem_configure_caller_button.configure(state="disabled")
         self.modem_read_and_odoo_post_caller_button.configure(state="disabled")
-        self.progressbar.start()
-
+        
         thread = Thread(target=network_scan, args=(self, str(self.ip_input.get())))
         thread.start()
         self.gui_console.update()
-        self.after(
-            5000, lambda: self.modem_read_and_odoo_post_caller_button.configure(state="enabled"))
-        self.after(5000, lambda: self.network_scan_caller_button.configure(state="enabled"))
-        self.after(5000, lambda: self.modem_configure_caller_button.configure(state="enabled"))
-        self.after(5000, lambda: self.progressbar.stop())
+
         
         # self.progressbar_1.stop()
         # network_scan(target_ip, output)

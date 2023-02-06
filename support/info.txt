@@ -1,1 +1,0 @@
-mac_filter=1c:18:4a

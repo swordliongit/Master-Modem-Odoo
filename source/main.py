@@ -24,7 +24,7 @@ needed_hosts = {}
 modify_queue = Queue()
 
 
-def network_scan(MmoGui, target_ip, fhfile="./hosts/found_hosts.json", mhfile="./hosts/modem_hosts.json"):
+def network_scan(MmoGui, target_ip, fhfile="Master-Modem-Odoo/hosts/found_hosts.json", mhfile="Master-Modem-Odoo/hosts/modem_hosts.json"):
     """Controls scapy_route network scanning functions.
 
     Args:
@@ -37,34 +37,58 @@ def network_scan(MmoGui, target_ip, fhfile="./hosts/found_hosts.json", mhfile=".
     mac_filter = ""
     # information retrieval - pre operation phase
     import os
+    
+    MmoGui.progressbar.start()
 
-    if os.stat("Master-Modem-Odoo/support/info.txt").st_size != 0:
-        with open("Master-Modem-Odoo/support/info.txt") as file:
+    if os.stat("Master-Modem-Odoo/required/info.txt").st_size != 0:
+        with open("Master-Modem-Odoo/required/info.txt") as file:
             # target_ip = file.readline().split('=')[1].strip('\n')   # ip range to scan
             mac_filter = file.readline().split('=')[1].strip('\n')  # mac filter to fetch
     else:
-        with open("Master-Modem-Odoo/support/info.txt", 'w') as file:
+        with open("Master-Modem-Odoo/required/info.txt", 'w') as file:
             # Python/modem_master_odoo/support/info.txt
             # file.writelines("target=192.168.5.0/24")
             file.writeline("mac_filter=1c:18:4a")
-
+            
+    # host finder start
     global needed_hosts
 
-    create_directory("hosts/")  # create our directory for our host files
+    create_directory("Master-Modem-Odoo/hosts/")  # create our directory for our host files
     target_ip = target_ip + "/24"
-    hosts: list[dict[str, str]] = host_finder(target_ip, MmoGui)  # network scan
-    host_writer(fhfile, hosts, MmoGui)  # write found hosts into fhfile
-    # filter found hosts based on 1c:18:4a mac and return a list of them
-    needed_hosts = host_analyzer(fhfile, mhfile, mac_filter)
-    if not needed_hosts:
-        print("No modems found!")
-        return
-    # return needed_hosts
-    # print("---------------------------")
+    
     MmoGui.gui_console.configure(state='normal')
-    MmoGui.gui_console.insert(customtkinter.END, "---------------------------\n")
-    MmoGui.gui_console.insert(customtkinter.END, "---------------------------\n")
+    MmoGui.gui_console.insert(customtkinter.END, "\n" + "#"*15 +
+                  "\nAg taraniyor...\n" + "#"*15 + "\n")
     MmoGui.gui_console.configure(state='disabled')
+    
+    hosts: list[dict[str, str]] = host_finder(target_ip)  # network scan
+    try:
+        if not hosts:
+            raise Exception("No modems were found!")
+    except Exception as e:
+        print(e.args[0])
+        MmoGui.gui_console.configure(state='normal')
+        MmoGui.gui_console.insert(customtkinter.END, "Hicbir modem bulunamadi! Lutfen dogru ag ayarlari yaptiginizdan ve modemlerin bagli oldugundan emin olun.\n")
+        MmoGui.gui_console.configure(state='disabled')
+    else:
+        MmoGui.gui_console.configure(state='normal')
+        MmoGui.gui_console.insert(customtkinter.END, "Aygitlar bulundu!\n")
+        MmoGui.gui_console.configure(state='disabled')
+
+        host_writer(fhfile, hosts, MmoGui)  # write found hosts into fhfile
+        # filter found hosts based on 1c:18:4a mac and return a list of them
+        needed_hosts = host_analyzer(fhfile, mhfile, mac_filter)
+        
+        MmoGui.modem_configure_caller_button.configure(state="enabled")
+        MmoGui.modem_read_and_odoo_post_caller_button.configure(state="enabled")
+    finally:
+        MmoGui.gui_console.configure(state='normal')
+        MmoGui.gui_console.insert(customtkinter.END, "---------------------------\n")
+        MmoGui.gui_console.insert(customtkinter.END, "---------------------------\n")
+        MmoGui.gui_console.configure(state='disabled')
+        
+        MmoGui.network_scan_caller_button.configure(state="enabled")
+        MmoGui.progressbar.stop()
 
 def confirmation():
     """This function is not used. It was to prompt warning message before attempting to modify modems.
@@ -123,8 +147,6 @@ def modem_read_and_odoo_post(MmoGui, x_hotel_name):
     #     t.start()
     # for t in threads:
     #     t.join()
-
-    # XXX TEST
     threads = []
     read_queue = Queue()
     
@@ -140,7 +162,6 @@ def modem_read_and_odoo_post(MmoGui, x_hotel_name):
         t.start()
     for t in threads:
         wait_group_r.wait()
-    # XXX TEST  
     """
     READ OPERATION END
     """
@@ -169,18 +190,17 @@ def modem_read_and_odoo_post(MmoGui, x_hotel_name):
     ODOO POST END
     """
     ############################
-
     # import tkinterthread
     # tkinterthread.call_nosync(confirmation)
+    MmoGui.gui_console.configure(state='normal')
+    MmoGui.gui_console.insert(customtkinter.END, 
+                "Şimdi modemlerde degisiklik yapin. Degisiklik yaptiginiz ayarlari uygulamak icin\n'Modem Ayarlarini Uygula Butonuna' basin."+
+                "Tekrar ag taramasi yapmak icin\n'Ag Taramasi' butonuna basin.\n")
+    MmoGui.gui_console.configure(state='disabled')
+
     MmoGui.network_scan_caller_button.configure(state="normal")
     MmoGui.modem_configure_caller_button.configure(state="normal")
     MmoGui.modem_read_and_odoo_post_caller_button.configure(state="normal")
-
-    MmoGui.gui_console.configure(state='normal')
-    MmoGui.gui_console.insert(customtkinter.END, 
-                  "Degisiklik yaptiginiz ayarlari uygulamak icin\n'Web Ayarlarini Uygula Butonuna' basin."+
-                  "Tekrar ag taramasi yapmak icin\n'Ag Taramasi' butonuna basin.\n")
-    MmoGui.gui_console.configure(state='disabled')
     
     print("---------------------------")
     MmoGui.gui_console.configure(state='normal')
@@ -242,10 +262,6 @@ def modem_configure(MmoGui):
     """
     mode = "modify"
     global modify_queue
-
-    MmoGui.gui_console.configure(state='normal')
-    MmoGui.gui_console.insert(customtkinter.END, "Modem konfigurasyonu basladi. Bu islem zaman alabilir, lutfen bekleyin...\n")
-    MmoGui.gui_console.configure(state='disabled')
     
     backup_read_modems_list = []
     while not modify_queue.empty():
@@ -262,6 +278,10 @@ def modem_configure(MmoGui):
         MmoGui.gui_console.insert(customtkinter.END, "Modemlerde degisiklik yapilmadi veya Odoo'ya veri gönderilmedi.\nLütfen Odoo'ya verileri gonderin ve daha sonra modemlerde degisiklik yapin.\n")
         MmoGui.gui_console.configure(state='disabled')
     else:
+        MmoGui.gui_console.configure(state='normal')
+        MmoGui.gui_console.insert(customtkinter.END, "Modem konfigurasyonu basladi. Bu islem zaman alabilir, lutfen bekleyin...\n")
+        MmoGui.gui_console.configure(state='disabled')
+        
         read_modems_list = []
         while not modify_queue.empty():
             read_modems_list.append(modify_queue.get())

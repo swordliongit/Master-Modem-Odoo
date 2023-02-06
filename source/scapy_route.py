@@ -14,7 +14,7 @@ import json
 import customtkinter
 # from Master_Modem_Odoo import MmoGui
 
-def host_finder(target_ip: str, MmoGui) -> list[dict[str, str]]:
+def host_finder(target_ip: str) -> list[dict[str, str]]:
     """
     This function sends packages to each host in the network and fetches their ip and mac addresses
 
@@ -22,14 +22,7 @@ def host_finder(target_ip: str, MmoGui) -> list[dict[str, str]]:
         returns a list of dictionaries of host info
     """
     from scapy.all import ARP, Ether, srp
-
-    # XXX
     # print("\n" + "#"*15 + "\nSearching the network...\n" + "#"*15 + "\n")
-    MmoGui.gui_console.configure(state='normal')
-    MmoGui.gui_console.insert(customtkinter.END, "\n" + "#"*15 +
-                  "\nAg taraniyor...\n" + "#"*15 + "\n")
-    MmoGui.gui_console.configure(state='disabled')
-    # XXX
     # target_ip = "192.168.5.0/24"
     # IP Address for the destination
     # create ARP packet
@@ -45,12 +38,9 @@ def host_finder(target_ip: str, MmoGui) -> list[dict[str, str]]:
     for sent, received in result:
         # for each response, append ip and mac address to `clients` list
         clients.append({'ip': received.psrc, 'mac': received.hwsrc})
-    # XXX
-    # print("Found hosts!")
-    MmoGui.gui_console.configure(state='normal')
-    MmoGui.gui_console.insert(customtkinter.END, "Aygitlar bulundu!\n")
-    MmoGui.gui_console.configure(state='disabled')
-    # XXX
+
+    if len(clients) == 0:
+        return False
 
     return clients
 
@@ -67,14 +57,15 @@ def host_writer(fhfile: str, clients: list, MmoGui):
     # XXX
     # print("Available devices in the network:")
     # print("IP" + " "*20+"MAC")
+    
+    # XXX
+    with open(fhfile, "w") as file:
+        json.dump(clients, file, indent=5)
+        
     MmoGui.gui_console.configure(state='normal')
     MmoGui.gui_console.insert(customtkinter.END, "Agdaki mevcut aygitlar:\n")
     MmoGui.gui_console.insert(customtkinter.END, "IP" + " "*20+"MAC\n")
     MmoGui.gui_console.configure(state='disabled')
-    # XXX
-    with open(fhfile, "w") as file:
-        json.dump(clients, file, indent=5)
-
     for client in clients:
         # file.write(f"{client['ip']:16}    {client['mac']}\n")
         # XXX
@@ -84,7 +75,6 @@ def host_writer(fhfile: str, clients: list, MmoGui):
             client['ip'], client['mac']))
         MmoGui.gui_console.configure(state='disabled')
         # XXX
-
     MmoGui.gui_console.configure(state='normal')
     MmoGui.gui_console.insert(customtkinter.END, "Ag taramasi bitti.\n")
     MmoGui.gui_console.configure(state='disabled')
