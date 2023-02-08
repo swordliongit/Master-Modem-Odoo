@@ -231,7 +231,7 @@ def interface_operation_read(driver, x_hotel_name, mac):
     return modem_read_result_dict
 
 
-def interface_operation_modify_compare(fetched_modem_list: list, fields_to_compare_list: list) -> OrderedDict():
+def interface_operation_modify_compare(fetched_modem_list: list, fields_to_compare_list: list) -> OrderedDict:
 
     # fetched_modem_list = [{'x_ip': "192.168.5.1", ...}, {'x_ip: "192.168.5.2", ...}, ...]
     print("Comparing values..")
@@ -258,7 +258,7 @@ def interface_operation_modify_compare(fetched_modem_list: list, fields_to_compa
     print("Values compared..")
 
 
-def interface_operation_modify(driver, fields_to_change: OrderedDict(), ip_for_modify):
+def interface_operation_modify(driver, fields_to_change: OrderedDict, ip_for_modify):
     print(f"Modify Operation launched for {ip_for_modify}")
 
     WLAN_task_list = []

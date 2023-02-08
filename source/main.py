@@ -63,7 +63,7 @@ def network_scan(MmoGui, target_ip, fhfile="Master-Modem-Odoo/hosts/found_hosts.
     
     hosts: list[dict[str, str]] = host_finder(target_ip)  # network scan
     try:
-        if not hosts:
+        if len(hosts) == 0:
             raise Exception("No modems were found!")
     except Exception as e:
         print(e.args[0])
@@ -313,7 +313,6 @@ def modem_configure(MmoGui):
         MmoGui.gui_console.configure(state='normal')
         MmoGui.gui_console.insert(customtkinter.END, "Modem konfigurasyonu bitti..\nVerileri Odoo'ya göndermek için 'Sonuclari Odoo'ya Gonder' butonuna basin.\n")
         MmoGui.gui_console.configure(state='disabled')
-
     finally:
         MmoGui.modem_read_and_odoo_post_caller_button.configure(state="normal")
         MmoGui.network_scan_caller_button.configure(state="normal")
