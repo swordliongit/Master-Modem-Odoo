@@ -7,7 +7,7 @@ from selenium_dependencies import *
 from time import sleep
 from collections import OrderedDict
 import utility
-
+from configparser import ConfigParser
 
 def is_logged_out(driver):
     try:
@@ -71,8 +71,6 @@ def operation_controller(ip, mac, mode, x_hotel_name, read_queue, fields_to_chan
         #options
         chrome_options = Options()
         chrome_options.add_argument("--headless")  # silent browser
-        import subprocess
-        subprocess.Popen("start /B Master-Modem-Odoo/required/chromedriver.exe --silent", shell=True)
         driver = webdriver.Chrome("Master-Modem-Odoo/required/chromedriver", options=chrome_options)
         # driver = webdriver.Chrome("Python/modem_master_odoo/support/chromedriver")
         modem_login(driver, ip)

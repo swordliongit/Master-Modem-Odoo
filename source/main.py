@@ -39,6 +39,7 @@ def network_scan(MmoGui, target_ip, fhfile="Master-Modem-Odoo/hosts/found_hosts.
     import os
     
     MmoGui.progressbar.start()
+    MmoGui.network_scan_caller_button.configure(state="disabled")
 
     if os.stat("Master-Modem-Odoo/required/info.txt").st_size != 0:
         with open("Master-Modem-Odoo/required/info.txt") as file:
@@ -119,6 +120,9 @@ def modem_read_and_odoo_post(MmoGui, x_hotel_name):
     """
     global needed_hosts
     
+    MmoGui.network_scan_caller_button.configure(state="disabled")
+    MmoGui.modem_configure_caller_button.configure(state="disabled")
+    MmoGui.modem_read_and_odoo_post_caller_button.configure(state="disabled")
     MmoGui.progressbar.start()
 
     ip_list = []
