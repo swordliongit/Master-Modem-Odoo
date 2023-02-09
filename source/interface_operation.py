@@ -66,12 +66,16 @@ def operation_controller(ip, mac, mode, x_hotel_name, read_queue, fields_to_chan
     """
     # add each thread to the group
     wait_group.add(1)
+    
+    config = ConfigParser()
+    config.read("Master-Modem-Odoo/required/credentials.ini")
+    CHROME_DRIVER_PATH = config.get("chromedriver", "path")
     # start the semaphore
     with thread_semaphore:
         #options
         chrome_options = Options()
         chrome_options.add_argument("--headless")  # silent browser
-        driver = webdriver.Chrome("Master-Modem-Odoo/required/chromedriver", options=chrome_options)
+        driver = webdriver.Chrome(CHROME_DRIVER_PATH, options=chrome_options)
         # driver = webdriver.Chrome("Python/modem_master_odoo/support/chromedriver")
         modem_login(driver, ip)
         

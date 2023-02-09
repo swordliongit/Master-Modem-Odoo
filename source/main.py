@@ -3,6 +3,7 @@
 #
 
 
+from configparser import ConfigParser
 from scapy_route import host_finder, host_writer, host_analyzer, ip_retriever
 from utility import create_directory
 from interface_operation import operation_controller, interface_operation_modify_compare
@@ -22,9 +23,12 @@ import customtkinter # improved tkinter, better for visuals
 needed_hosts = {}
 # global because modem read fills it and modem configure consumes it separately.
 modify_queue = Queue()
+config = ConfigParser()
+config.read("Master-Modem-Odoo/required/credentials.ini")
+FOUND_HOSTS_PATH = config.get("fhfile", "path")
+MODEM_HOSTS_PATH = config.get("mhfile", "path")
 
-
-def network_scan(MmoGui, target_ip, fhfile="Master-Modem-Odoo/hosts/found_hosts.json", mhfile="Master-Modem-Odoo/hosts/modem_hosts.json"):
+def network_scan(MmoGui, target_ip, fhfile=FOUND_HOSTS_PATH, mhfile=MODEM_HOSTS_PATH):
     """Controls scapy_route network scanning functions.
 
     Args:
@@ -40,21 +44,12 @@ def network_scan(MmoGui, target_ip, fhfile="Master-Modem-Odoo/hosts/found_hosts.
     
     MmoGui.progressbar.start()
     MmoGui.network_scan_caller_button.configure(state="disabled")
-
-    if os.stat("Master-Modem-Odoo/required/info.txt").st_size != 0:
-        with open("Master-Modem-Odoo/required/info.txt") as file:
-            # target_ip = file.readline().split('=')[1].strip('\n')   # ip range to scan
-            mac_filter = file.readline().split('=')[1].strip('\n')  # mac filter to fetch
-    else:
-        with open("Master-Modem-Odoo/required/info.txt", 'w') as file:
-            # Python/modem_master_odoo/support/info.txt
-            # file.writelines("target=192.168.5.0/24")
-            file.writeline("mac_filter=1c:18:4a")
-            
+    mac_filter = config.get("macfilter", "filter")
+    HOSTS_DIRECTORY_PATH = config.get("hosts", "path")        
     # host finder start
     global needed_hosts
 
-    create_directory("Master-Modem-Odoo/hosts/")  # create our directory for our host files
+    create_directory(HOSTS_DIRECTORY_PATH)  # create our directory for our host files
     target_ip = target_ip + "/24"
     
     MmoGui.gui_console.configure(state='normal')

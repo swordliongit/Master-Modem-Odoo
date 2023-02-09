@@ -3,13 +3,13 @@
 #
 
 
+from configparser import ConfigParser
 from time import sleep
 import customtkinter
 from threading import Thread, Event
 from main import network_scan, modem_read_and_odoo_post, modem_configure
 from utility import u_p_setter
 import json
-
 
 customtkinter.set_appearance_mode("light")
 customtkinter.set_default_color_theme("dark-blue")
@@ -18,7 +18,12 @@ class MmoGui(customtkinter.CTk):
     def __init__(self):
         super().__init__()
         
+        # saved defaults
         self.defaults = {}
+        # read the config file
+        config = ConfigParser()
+        config.read("Master-Modem-Odoo/required/credentials.ini")
+        self.SAVED_ENTRIES_PATH = config.get("entries", "path")
         
         self.grid_columnconfigure((0, 1, 2, 3), weight=0)
         self.grid_rowconfigure((0, 1, 2), weight=0)
@@ -102,29 +107,37 @@ class MmoGui(customtkinter.CTk):
         # self.progressbar_1.start()
         
         
-        
     def on_closing(self):
-        """Called when you press the X button to close the program
+        """Called when you press the X button to close the program. Kills the GUI and the opened chromedriver threads
         """
         sleep(0.5)
+
+        import psutil
+        PROCNAME = "Master Modem Odoo.exe"
+        DRIVER = "chromedriver.exe"
+        for proc in psutil.process_iter():
+            # check whether the process name matches
+            if proc.name() == PROCNAME or proc.name() == DRIVER:
+                proc.kill()
+        sleep(1)
         self.destroy()
           
     def network_scan_caller(self):
         """This button function calls the function that scans the network for modems
 
         Args:
-            output (_type_): tkinter.Text console
-            target_ip (_type_): ip interval to scan
+            self (MmoGui): Pass in self to access to variables
         """
         self.modem_configure_caller_button.configure(state="disabled")
         self.modem_read_and_odoo_post_caller_button.configure(state="disabled")
         
+        # if the button is pressed and the entry is filled, save all of the entries
         if len(self.ip_input.get()) != 0:
             self.defaults["ip_input"] = self.ip_input.get()
             self.defaults["hotel_name_input"] = self.hotel_name_input.get()
             self.defaults["username_input"] = self.username_input.get()
             self.defaults["password_input"] = self.password_input.get()
-            with open("Master-Modem-Odoo/source/MMO_saved_entries.json", "w") as jsonf:
+            with open(self.SAVED_ENTRIES_PATH, "w") as jsonf:
                 json.dump(self.defaults, jsonf, indent=5)
             thread = Thread(target=network_scan, args=(self, str(self.ip_input.get())))
             thread.start()
@@ -143,14 +156,14 @@ class MmoGui(customtkinter.CTk):
     posts this data to Odoo database  
 
         Args:
-            output (_type_): _description_
-            x_hotel_name (_type_): _description_
+            self (MmoGui): Pass in self to access to variables
         """
+        # set username and password of the modem interfaces through the corresponding fields
         u_p_setter(self.username_input.get(), self.password_input.get())
 
         state_list = [] 
         state_error = False
-        
+        # show error msgs as many as there are empty entries that are necessary
         if len(self.hotel_name_input.get()) == 0:
             state_error = True
             state_list.append("Otel adi girin!\n")
@@ -160,14 +173,16 @@ class MmoGui(customtkinter.CTk):
         if len(self.password_input.get()) == 0:
             state_error = True
             state_list.append("Modem parolasi girin!\n")
+        # if there are no errors at all, launch the function
         if not state_error:
             thread = Thread(target=modem_read_and_odoo_post, args=(self, self.hotel_name_input.get()))
             thread.start() 
         else:
+            # save the entries, so we can launch the gui with those saved entries already filled in
             self.defaults["hotel_name_input"] = self.hotel_name_input.get()
             self.defaults["username_input"] = self.username_input.get()
             self.defaults["password_input"] = self.password_input.get()
-            with open("Master-Modem-Odoo/source/MMO_saved_entries.json", "w") as jsonf:
+            with open(self.SAVED_ENTRIES_PATH, "w") as jsonf:
                 json.dump(self.defaults, jsonf, indent=5)
             self.gui_console.configure(state='normal')
             for cmd in state_list:
@@ -178,7 +193,6 @@ class MmoGui(customtkinter.CTk):
     
     def modem_configure_caller(self):
         """This button function calls the function that modifies each modem
-
         """
         self.network_scan_caller_button.configure(state="disabled")
         self.modem_configure_caller_button.configure(state="disabled")
@@ -190,9 +204,12 @@ class MmoGui(customtkinter.CTk):
     
     
 if __name__ == "__main__":
+    # initate the gui
     MmoGui = MmoGui()
-    with open("Master-Modem-Odoo/source/MMO_saved_entries.json", "r") as f:
+    # load saved settings
+    with open(MmoGui.SAVED_ENTRIES_PATH, "r") as f:
         MmoGui.defaults = json.load(f)
+    # if there are any saved settings, load them to the corresponding entries
     for k, v in MmoGui.defaults.items():
         match k:
             case "hotel_name_input":
@@ -207,4 +224,5 @@ if __name__ == "__main__":
             case "password_input":
                 if len(v) != 0:   
                     MmoGui.password_input.insert(customtkinter.INSERT, str(MmoGui.defaults["password_input"]))
+    # start the gui
     MmoGui.mainloop()
