@@ -22,7 +22,7 @@ class MmoGui(customtkinter.CTk):
         self.defaults = {}
         # read the config file
         config = ConfigParser()
-        config.read("Master-Modem-Odoo/required/credentials.ini")
+        config.read("../required/credentials.ini")
         self.SAVED_ENTRIES_PATH = config.get("entries", "path")
         
         self.grid_columnconfigure((0, 1, 2, 3), weight=0)

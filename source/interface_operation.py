@@ -68,7 +68,7 @@ def operation_controller(ip, mac, mode, x_hotel_name, read_queue, fields_to_chan
     wait_group.add(1)
     
     config = ConfigParser()
-    config.read("Master-Modem-Odoo/required/credentials.ini")
+    config.read("../required/credentials.ini")
     CHROME_DRIVER_PATH = config.get("chromedriver", "path")
     # start the semaphore
     with thread_semaphore:

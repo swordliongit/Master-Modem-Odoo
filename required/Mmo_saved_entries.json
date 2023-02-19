@@ -1,6 +1,6 @@
 {
      "hotel_name_input": "",
-     "ip_input": "",
+     "ip_input": "192.168.5.0",
      "username_input": "",
      "password_input": ""
 }

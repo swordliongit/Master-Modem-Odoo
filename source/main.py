@@ -24,7 +24,7 @@ needed_hosts = {}
 # global because modem read fills it and modem configure consumes it separately.
 modify_queue = Queue()
 config = ConfigParser()
-config.read("Master-Modem-Odoo/required/credentials.ini")
+config.read("../required/credentials.ini")
 FOUND_HOSTS_PATH = config.get("fhfile", "path")
 MODEM_HOSTS_PATH = config.get("mhfile", "path")
 
