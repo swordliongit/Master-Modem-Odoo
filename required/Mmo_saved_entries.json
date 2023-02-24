@@ -1,6 +1,6 @@
 {
-     "hotel_name_input": "",
+     "hotel_name_input": "hoteltest",
      "ip_input": "192.168.5.0",
-     "username_input": "",
-     "password_input": ""
+     "username_input": "R3000admin",
+     "password_input": "admin"
 }
