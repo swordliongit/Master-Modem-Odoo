@@ -12,7 +12,6 @@
 import json
 # import tkinter
 import customtkinter
-# from Master_Modem_Odoo import MmoGui
 
 def host_finder(target_ip: str) -> list[dict[str, str]]:
     """
@@ -22,27 +21,28 @@ def host_finder(target_ip: str) -> list[dict[str, str]]:
         returns a list of dictionaries of host info
     """
     from scapy.all import ARP, Ether, srp
-    # print("\n" + "#"*15 + "\nSearching the network...\n" + "#"*15 + "\n")
-    # target_ip = "192.168.5.0/24"
-    # IP Address for the destination
-    # create ARP packet
-    arp = ARP(pdst=target_ip)
-    # create the Ether broadcast packet
-    # ff:ff:ff:ff:ff:ff MAC address indicates broadcasting
-    ether = Ether(dst="ff:ff:ff:ff:ff:ff")
-    # stack them
-    packet = ether/arp
-    result = srp(packet, timeout=3, verbose=0)[0]
-    # a list of clients, we will fill this in the upcoming loop
-    clients = []
-    for sent, received in result:
-        # for each response, append ip and mac address to `clients` list
-        clients.append({'ip': received.psrc, 'mac': received.hwsrc})
+    try:
+        # print("\n" + "#"*15 + "\nSearching the network...\n" + "#"*15 + "\n")
+        # target_ip = "192.168.5.0/24"
+        # IP Address for the destination
+        # create ARP packet
+        arp = ARP(pdst=target_ip)
+        # create the Ether broadcast packet
+        # ff:ff:ff:ff:ff:ff MAC address indicates broadcasting
+        ether = Ether(dst="ff:ff:ff:ff:ff:ff")
+        # stack them
+        packet = ether/arp
+        result = srp(packet, timeout=3, verbose=0)[0]
+    except:
+        raise Exception("Invalid Ip")
+    else:
+        # a list of clients, we will fill this in the upcoming loop
+        clients = []
+        for sent, received in result:
+            # for each response, append ip and mac address to `clients` list
+            clients.append({'ip': received.psrc, 'mac': received.hwsrc})
 
-    if len(clients) == 0:
-        return False
-
-    return clients
+        return clients
 
 
 def host_writer(fhfile: str, clients: list, MmoGui):
@@ -64,7 +64,7 @@ def host_writer(fhfile: str, clients: list, MmoGui):
         
     MmoGui.gui_console.configure(state='normal')
     MmoGui.gui_console.insert(customtkinter.END, "Agdaki mevcut aygitlar:\n")
-    MmoGui.gui_console.insert(customtkinter.END, "IP" + " "*20+"MAC\n")
+    MmoGui.gui_console.insert(customtkinter.END, "IP" + " "*29+"MAC\n")
     MmoGui.gui_console.configure(state='disabled')
     for client in clients:
         # file.write(f"{client['ip']:16}    {client['mac']}\n")

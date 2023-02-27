@@ -14,7 +14,6 @@ from queue import Queue
 from WaitGroup import WaitGroup
 # import PySimpleGUI as sg # left this gui method due to its incapability in multithreaded environment
 
-# from Master_Modem_Odoo import MmoGui
 # import tkinter  # capable of multithreaded work
 import customtkinter # improved tkinter, better for visuals
 
@@ -23,12 +22,9 @@ import customtkinter # improved tkinter, better for visuals
 needed_hosts = {}
 # global because modem read fills it and modem configure consumes it separately.
 modify_queue = Queue()
-config = ConfigParser()
-config.read("../required/credentials.ini")
-FOUND_HOSTS_PATH = config.get("fhfile", "path")
-MODEM_HOSTS_PATH = config.get("mhfile", "path")
 
-def network_scan(MmoGui, target_ip, fhfile=FOUND_HOSTS_PATH, mhfile=MODEM_HOSTS_PATH):
+
+def network_scan(MmoGui, target_ip, fhfile="", mhfile=""):
     """Controls scapy_route network scanning functions.
 
     Args:
@@ -39,9 +35,14 @@ def network_scan(MmoGui, target_ip, fhfile=FOUND_HOSTS_PATH, mhfile=MODEM_HOSTS_
 
     """
     mac_filter = ""
-    # information retrieval - pre operation phase
-    import os
+    config = ConfigParser()
+    config.read("required/credentials.ini")
+    FOUND_HOSTS_PATH = config.get("fhfile", "path")
+    MODEM_HOSTS_PATH = config.get("mhfile", "path")
+    fhfile = FOUND_HOSTS_PATH
+    mhfile = MODEM_HOSTS_PATH
     
+    # information retrieval - pre operation phase
     MmoGui.progressbar.start()
     MmoGui.network_scan_caller_button.configure(state="disabled")
     mac_filter = config.get("macfilter", "filter")
@@ -57,30 +58,37 @@ def network_scan(MmoGui, target_ip, fhfile=FOUND_HOSTS_PATH, mhfile=MODEM_HOSTS_
                   "\nAg taraniyor...\n" + "#"*15 + "\n")
     MmoGui.gui_console.configure(state='disabled')
     
-    hosts: list[dict[str, str]] = host_finder(target_ip)  # network scan
     try:
-        if len(hosts) == 0:
-            raise Exception("No modems were found!")
+        hosts: list[dict[str, str]] = host_finder(target_ip)  # network scan
     except Exception as e:
         print(e.args[0])
         MmoGui.gui_console.configure(state='normal')
-        MmoGui.gui_console.insert(customtkinter.END, "Hicbir modem bulunamadi! Lutfen dogru ag ayarlari yaptiginizdan ve modemlerin bagli oldugundan emin olun.\n")
+        MmoGui.gui_console.insert(customtkinter.END, "Gecersiz IP adresi girdiniz, lutfen duzeltin ve tekrar deneyin.\n")
         MmoGui.gui_console.configure(state='disabled')
     else:
-        MmoGui.gui_console.configure(state='normal')
-        MmoGui.gui_console.insert(customtkinter.END, "Aygitlar bulundu!\n")
-        MmoGui.gui_console.configure(state='disabled')
-
         host_writer(fhfile, hosts, MmoGui)  # write found hosts into fhfile
         # filter found hosts based on 1c:18:4a mac and return a list of them
         needed_hosts = host_analyzer(fhfile, mhfile, mac_filter)
-        
-        MmoGui.modem_configure_caller_button.configure(state="enabled")
-        MmoGui.modem_read_and_odoo_post_caller_button.configure(state="enabled")
+        try:
+            if len(needed_hosts) == 0:
+                raise Exception("No modems were found!")
+        except Exception as e:
+            print(e.args[0])
+            MmoGui.gui_console.configure(state='normal')
+            MmoGui.gui_console.insert(customtkinter.END, "Hicbir modem bulunamadi! Lutfen dogru ag ayarlarini yaptiginizdan ve modemlerin bagli oldugundan emin olun.\n")
+            MmoGui.gui_console.configure(state='disabled')
+        else:
+            MmoGui.gui_console.configure(state='normal')
+            MmoGui.gui_console.insert(customtkinter.END, "Aygitlar bulundu!\n")
+            MmoGui.gui_console.configure(state='disabled')
+            
+            MmoGui.modem_configure_caller_button.configure(state="enabled")
+            MmoGui.modem_read_and_odoo_post_caller_button.configure(state="enabled")
     finally:
         MmoGui.gui_console.configure(state='normal')
         MmoGui.gui_console.insert(customtkinter.END, "---------------------------\n")
         MmoGui.gui_console.insert(customtkinter.END, "---------------------------\n")
+        MmoGui.gui_console.yview(customtkinter.END)
         MmoGui.gui_console.configure(state='disabled')
         
         MmoGui.network_scan_caller_button.configure(state="enabled")
@@ -156,7 +164,7 @@ def modem_read_and_odoo_post(MmoGui, x_hotel_name):
     
     for ip, mac in zip(ip_list, mac_list):
         t = threading.Thread(target=operation_controller, args=(
-            ip, mac, mode, x_hotel_name, read_queue, "", thread_semaphore, wait_group_r))
+            ip, mac, mode, x_hotel_name, read_queue, "", thread_semaphore, wait_group_r, MmoGui))
         threads.append(t)
         t.start()
     for t in threads:
@@ -205,6 +213,7 @@ def modem_read_and_odoo_post(MmoGui, x_hotel_name):
     MmoGui.gui_console.configure(state='normal')
     MmoGui.gui_console.insert(customtkinter.END, "---------------------------\n")
     MmoGui.gui_console.insert(customtkinter.END, "---------------------------\n")
+    MmoGui.gui_console.yview(customtkinter.END)
     MmoGui.gui_console.configure(state='disabled')
     
     MmoGui.progressbar.stop()
@@ -303,7 +312,7 @@ def modem_configure(MmoGui):
         wait_group_w = WaitGroup()
         for ip, fields_to_change in zip(ips_of_modified_modems, fields_to_change_list):
             t = threading.Thread(target=operation_controller, args=(
-                ip, "", mode, "", None, fields_to_change, thread_semaphore, wait_group_w))
+                ip, "", mode, "", None, fields_to_change, thread_semaphore, wait_group_w, MmoGui))
             threads.append(t)
             t.start()
         for t in threads:  # wait for all threads to finish
@@ -319,6 +328,7 @@ def modem_configure(MmoGui):
         print("---------------------------")
         MmoGui.gui_console.configure(state='normal')
         MmoGui.gui_console.insert(customtkinter.END, "---------------------------\n---------------------------\n")
+        MmoGui.gui_console.yview(customtkinter.END)
         MmoGui.gui_console.configure(state='disabled')
         
         MmoGui.progressbar.stop()

@@ -10,6 +10,7 @@ from threading import Thread, Event
 from main import network_scan, modem_read_and_odoo_post, modem_configure
 from utility import u_p_setter
 import json
+import os
 
 customtkinter.set_appearance_mode("light")
 customtkinter.set_default_color_theme("dark-blue")
@@ -21,8 +22,9 @@ class MmoGui(customtkinter.CTk):
         # saved defaults
         self.defaults = {}
         # read the config file
+        # print(os.listdir(os.getcwd()))
         config = ConfigParser()
-        config.read("../required/credentials.ini")
+        config.read("required/credentials.ini")
         self.SAVED_ENTRIES_PATH = config.get("entries", "path")
         
         self.grid_columnconfigure((0, 1, 2, 3), weight=0)

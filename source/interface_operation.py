@@ -8,6 +8,7 @@ from time import sleep
 from collections import OrderedDict
 import utility
 from configparser import ConfigParser
+import customtkinter
 
 def is_logged_out(driver):
     try:
@@ -45,11 +46,10 @@ def modem_login(driver, ip):
         # WebDriverWait(driver, 5).until(lambda driver: "http://192.168.1.1/cgi-bin/luci/admin/" != driver.current_url)
     except:
         print(f"Login failed for {ip}")
-        return -1  # XXX GOTTA CHANGE
-    else:
-        print(f"Logged in successfully for {ip}")
 
-def operation_controller(ip, mac, mode, x_hotel_name, read_queue, fields_to_change, thread_semaphore, wait_group):
+
+
+def operation_controller(ip, mac, mode, x_hotel_name, read_queue, fields_to_change, thread_semaphore, wait_group, MmoGui):
     """This function is supposed to be threaded. Called for each ip address. Separates the program into read and modify subroutines.
     interface_operation_read returns the dictionary containing each field of the modem and queues it into read_queue that's passed
     from the caller.
@@ -68,7 +68,7 @@ def operation_controller(ip, mac, mode, x_hotel_name, read_queue, fields_to_chan
     wait_group.add(1)
     
     config = ConfigParser()
-    config.read("../required/credentials.ini")
+    config.read("required/credentials.ini")
     CHROME_DRIVER_PATH = config.get("chromedriver", "path")
     # start the semaphore
     with thread_semaphore:
@@ -79,15 +79,23 @@ def operation_controller(ip, mac, mode, x_hotel_name, read_queue, fields_to_chan
         # driver = webdriver.Chrome("Python/modem_master_odoo/support/chromedriver")
         modem_login(driver, ip)
         
-        if mode == "read":
-            # modem_read_result_dict = {}
-            modem_read_result_dict = interface_operation_read(driver, x_hotel_name, mac)
-            read_queue.put(modem_read_result_dict)
-        elif mode == "modify":
-            interface_operation_modify(driver, fields_to_change, ip)
-        # current_url = driver.current_url
-    # signal for finish
-    wait_group.done()
+        try:
+            if mode == "read":
+                # modem_read_result_dict = {}
+                modem_read_result_dict = interface_operation_read(driver, x_hotel_name, mac)
+                read_queue.put(modem_read_result_dict)
+            elif mode == "modify":
+                interface_operation_modify(driver, fields_to_change, ip)
+            # current_url = driver.current_url
+        except:
+            print(f"Connection lost to {ip}")
+            MmoGui.gui_console.configure(state='normal')
+            MmoGui.gui_console.insert(
+                customtkinter.END, f"{ip} ile baglanti kesildi. Modemin bagli oldugundan ve giris bilgilerinin dogrulugundan emin olun.\n")
+            MmoGui.gui_console.configure(state='disabled')
+        finally:    
+            # signal for finish
+            wait_group.done()
 
 def interface_operation_read(driver, x_hotel_name, mac):
     """function that does the actual search operation inside the page and retrieves elements
